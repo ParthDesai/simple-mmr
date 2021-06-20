@@ -70,7 +70,36 @@ where
     Err: std::error::Error,
 {
     fn append(&mut self, data: H) -> Result<(), Err> {
-        todo!()
+        let hash = data.hash();
+        let current_length = self.length();
+        let last_element = &self[current_length];
+        let last_element_height = last_element.height();
+
+        let mut staged_outputs: Vec<O> = vec![];
+
+        assert_ne!(self.number_of_elements_at(last_element_height) % 2, 0);
+
+        staged_outputs.push(O::new(0, hash));
+        self.increment_elements_at(0);
+
+        let mut current_height = 0;
+
+        while self.number_of_elements_at(current_height) % 2 == 0 {
+            staged_outputs.push(O::new(
+                current_height + 1,
+                /** TODO: Calculate hash**/
+                Hash::default(),
+            ));
+            self.increment_elements_at(current_height + 1);
+            current_height += 1;
+        }
+
+        self.increase_capacity(staged_outputs.len());
+        for (i, staged_output) in staged_outputs.drain(..).enumerate() {
+            self[current_length + 1 + i] = staged_output;
+        }
+
+        Ok(())
     }
 
     fn root(&self) -> H::Output {
