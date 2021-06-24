@@ -47,7 +47,7 @@ pub trait SimpleMMR<Data: Hashable, Error: std::error::Error> {
 }
 
 pub trait PrunableMMR<Data: Hashable, Error: std::error::Error>: SimpleMMR<Data, Error> {
-    fn prune(&mut self) -> Result<(), Error>;
+    fn prune(&mut self, prune_elements: Vec<usize>) -> Result<(), Error>;
 }
 
 pub trait SimpleMMRStorage<O>:
@@ -58,8 +58,8 @@ pub trait SimpleMMRStorage<O>:
     fn increase_capacity(&mut self, increase_by: usize) -> usize;
 }
 
-pub trait PrunableSimpleMMRStorage<O>: SimpleMMRStorage<O> {
-    fn prune_element(&mut self, elem_index: usize);
+pub trait SimpleMMRStorageWithDeletion<O>: SimpleMMRStorage<O> {
+    fn delete_element(&mut self, elem_index: usize);
 }
 
 impl<H, Err, O, Hash> SimpleMMR<H, Err> for dyn SimpleMMRStorage<O>
@@ -110,23 +110,37 @@ where
 // Due to Rust's restriction on non-auto trait, we need to create placeholder trait composed of
 // PrunableSimpleMMRStorage + SimpleMMR to implement PrunableMMR on all objects that implement
 // PrunableSimpleMMRStorage and SimpleMMR
-pub trait PrunableStorageWithSimpleMMR<
+pub trait SimpleMMRForStorageWithDeletion<
     Hash: Default,
     O: Output<Hash = Hash>,
     H: Hashable<Output = Hash>,
     Error: std::error::Error,
->: PrunableSimpleMMRStorage<O> + SimpleMMR<H, Error>
+>: SimpleMMRStorageWithDeletion<O> + SimpleMMR<H, Error>
 {
 }
 
-impl<H, Err, O, Hash> PrunableMMR<H, Err> for dyn PrunableStorageWithSimpleMMR<Hash, O, H, Err>
+impl<H, Err, O, Hash> PrunableMMR<H, Err> for dyn SimpleMMRForStorageWithDeletion<Hash, O, H, Err>
 where
     Hash: Default,
     O: Output<Hash = Hash>,
     H: Hashable<Output = Hash>,
     Err: std::error::Error,
 {
-    fn prune(&mut self) -> Result<(), Err> {
-        todo!()
+    fn prune(&mut self, prune_elements: Vec<usize>) -> Result<(), Err> {
+        for element in prune_elements {
+            if self.length() < element {
+                // Return an error
+            }
+
+            if self[element].height() != 0 {
+                // Return an error
+            }
+        }
+
+        // If left and right siblings both are going to be deleted then delete the parent as well
+        // repeat above process till no more childless parent is there.
+        // After this, recalculate hash of the parent
+
+        Ok(())
     }
 }
